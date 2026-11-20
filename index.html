@@ -523,6 +523,10 @@
                     <p id="victory-summary-text" class="text-sm sm:text-base text-amber-100 mt-3 leading-relaxed"></p>
                 </div>
                 <div id="victory-stats-grid" class="grid sm:grid-cols-2 gap-2 mt-5 text-left"></div>
+                <div class="mt-6 text-left">
+                    <h3 class="text-xl font-black text-white mb-3"><i class="fa-solid fa-medal text-amber-400 mr-2"></i>Médailles débloquées</h3>
+                    <div id="victory-medals" class="grid sm:grid-cols-2 gap-3"></div>
+                </div>
                 <div class="mt-5 bg-slate-950 border border-slate-700 rounded-xl p-5 text-center">
                     <div class="text-xs uppercase text-slate-400">Score final</div>
                     <div id="victory-score" class="text-4xl font-black text-amber-400 mt-1"></div>
@@ -2658,8 +2662,8 @@ ${legInfo.name}
           const rawScore=-gameState.totalMoves/10+(st.maxManifestants||0)*10+(st.forcesImmobilisees||0)-(st.gav||0)-(st.hospital||0)+(st.passants||0)+(st.barricades||0)*5+(st.supers||0)*5+(st.legendaries||0)*10+f*40+(st.nasses||0)*30+(st.maxPlaces||0)*50;
           return {rows,score:gameState.gameMode==='quick'?getQuickScore():Math.ceil(rawScore),f,medals:getUnlockedMedals()};
         }
-        function renderMedals(medals){
-          const el=document.getElementById('stats-medals');if(!el)return;
+        function renderMedals(medals,targetId='stats-medals'){
+          const el=document.getElementById(targetId);if(!el)return;
           el.innerHTML=medals.length?medals.map(m=>`<div class="bg-amber-950/50 border border-amber-500/60 rounded-xl p-4 flex gap-3 items-start"><div class="w-10 h-10 shrink-0 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center"><i class="fa-solid ${m[1]}"></i></div><div><div class="font-black text-amber-300">${m[0]}</div><div class="text-xs text-slate-300 mt-1">${m[3]}</div></div></div>`).join(''):'<div class="sm:col-span-2 text-center text-slate-400 bg-slate-950 rounded-xl p-4">Aucune médaille débloquée pour cette partie.</div>';
         }
         function showStats(){
@@ -2695,6 +2699,7 @@ ${legInfo.name}
                 :"Félicitations, vous avez pris la capitale ! Vous n'avez cependant pas réussi à instaurer suffisamment d'organisations citoyennes et le mouvement reste fragile. Il faut poursuivre la lutte !";
             document.getElementById('victory-stats-grid').innerHTML=data.rows.map(r=>`<div class="flex justify-between gap-4 bg-slate-800 rounded-lg px-4 py-3 text-sm"><span class="text-slate-300">${r[0]}</span><strong class="text-white">${r[1]}</strong></div>`).join('');
             document.getElementById('victory-score').textContent=data.score;
+            renderMedals(data.medals,'victory-medals');
             document.getElementById('modal-endgame').scrollTop=0;
         }
 
