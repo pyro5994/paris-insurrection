@@ -266,6 +266,7 @@
         <button type="button" onclick="openDifficultyFromStart()" class="relative z-10 mt-4 shrink-0 bg-red-600 hover:bg-red-500 active:bg-red-700 text-white border-2 border-white/80 font-black px-8 py-3 rounded-2xl uppercase tracking-[0.18em] text-base shadow-2xl transition transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-amber-300 sm:absolute sm:mt-0 sm:bottom-[7%] sm:left-1/2 sm:-translate-x-1/2 sm:px-10 sm:py-4 sm:tracking-[0.22em] sm:text-lg">
             <i class="fa-solid fa-play mr-3"></i>Démarrer
         </button>
+        <div class="absolute bottom-3 left-3 z-10 rounded-md border border-white/15 bg-slate-950/55 px-2 py-1 text-[10px] font-semibold tracking-wider text-slate-300/80 backdrop-blur-sm sm:bottom-4 sm:left-4 sm:text-xs">v2.37</div>
     </div>
 
     <!-- MODAL DE SÉLECTION DE DIFFICULTÉ (AU DÉMARRAGE) -->
@@ -753,6 +754,8 @@
             quickObjective: null,
             quickObjectiveAchieved: false,
             quickMinThreeMaintained: true,
+            quickThreePlacesBy100: false,
+            quickFourPlacesBy200: false,
             quickLegendaryKills: 0,
             quickSuperKills: 0,
             quickEnded: false,
@@ -897,7 +900,7 @@
           {id:'nation_bastille',text:'Faire un cortège de manifestants ininterrompu entre Nation et Bastille et le conserver jusqu’à la fin de la partie'},
           {id:'republique_nation',text:'Faire un cortège de manifestants ininterrompu entre République et Nation et le conserver jusqu’à la fin de la partie'},
           {id:'republique_opera',text:'Faire un cortège de manifestants ininterrompu entre République et Opéra et le conserver jusqu’à la fin de la partie'},
-          {id:'barricades_concorde',text:'Dresser des barricades sur tous les axes autour de Concorde et les conserver jusqu’à la fin de la partie'},
+          {id:'barricades_concorde',text:'Dresser des barricades sur les quatre tuiles entourant Concorde et les conserver jusqu’à la fin de la partie'},
           {id:'first_etoile',text:'Étoile doit être la première place à être occupée'},
           {id:'first_elysee',text:'Élysée doit être la première place à être occupée'},
           {id:'org_green',text:'Proclamer les organisations : Artère verte (Etoile), Jardins ouvriers élyséens (Elysée) et Obélisque solaire(Concorde)'},
@@ -908,7 +911,17 @@
           {id:'crs40',text:'Immobiliser 40 CRS'},
           {id:'legendary10',text:'Immobiliser 10 CRS à l’aide d’un révolutionnaire légendaire'},
           {id:'super5',text:'Immobiliser 5 CRS à l’aide d’un super-manifestant'},
-          {id:'places5',text:'Occuper 5 places et les conserver jusqu’à la fin de la partie'}
+          {id:'places5',text:'Occuper 5 places et les conserver jusqu’à la fin de la partie'},
+          {id:'manifestants30',text:'Rassembler plus de 30 manifestants simultanément'},
+          {id:'manifestants15max',text:'Ne pas dépasser 15 manifestants au cours de la partie'},
+          {id:'gav0',text:'Terminer la partie avec zéro camarade en garde à vue'},
+          {id:'hospital0',text:'Terminer la partie avec zéro camarade à l’hôpital'},
+          {id:'manifestants15_places0',text:'Terminer la partie avec 15 manifestants actifs et zéro place occupée'},
+          {id:'super_actif',text:'Terminer la partie avec un super-manifestant encore actif'},
+          {id:'legendaire_actif',text:'Terminer la partie avec un révolutionnaire légendaire encore actif'},
+          {id:'org_solidarite',text:'Proclamer les organisations : Grand hôpital du peuple (Invalides), Grande cantine citoyenne (Bastille) et Comité populaire au logement (Hôtel de ville)'},
+          {id:'places3_tour100',text:'Occuper 3 places dans les 100 premiers tours'},
+          {id:'places4_tour200',text:'Occuper 4 places dans les 200 premiers tours'}
         ];
         function updateHeaderForMode(){
           const quick=gameState.gameMode==='quick', hud=document.getElementById('resource-hud');
@@ -920,7 +933,7 @@
         function selectGameMode(mode){gameState.gameMode=mode;updateStatsButtonsForMode();updateHeaderForMode();document.getElementById('modal-game-mode').classList.add('hidden');if(mode==='quick'){gameState.quickObjective=QUICK_OBJECTIVES[Math.floor(Math.random()*QUICK_OBJECTIVES.length)];document.getElementById('quick-objective-text').textContent=gameState.quickObjective.text;document.getElementById('modal-quick-rules').classList.remove('hidden');}else launchSelectedGame();}
         function launchSelectedGame(){audioManager.startBackgroundMusic();updateStatsButtonsForMode();updateHeaderForMode();document.getElementById('modal-quick-rules').classList.add('hidden');startGameWithDifficulty(gameState.pendingDifficulty||'medium');}
         function quickConnected(a,b){const pa=gameState.places[a],pb=gameState.places[b];if(!pa||!pb)return false;const occupied=new Set(gameState.manifestants.map(m=>`${m.gx},${m.gy}`));occupied.add(`${pa.gx},${pa.gy}`);occupied.add(`${pb.gx},${pb.gy}`);const q=[[pa.gx,pa.gy]],seen=new Set([`${pa.gx},${pa.gy}`]);while(q.length){const [x,y]=q.shift();if(x===pb.gx&&y===pb.gy)return true;for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const k=`${x+dx},${y+dy}`;if(occupied.has(k)&&!seen.has(k)){seen.add(k);q.push([x+dx,y+dy]);}}}return false;}
-        function quickObjectiveMet(){const o=gameState.quickObjective&&gameState.quickObjective.id,st=gameState.stats||{},p=gameState.places||{},org=id=>p[id]&&p[id].organizationActive,captured=Object.values(p).filter(x=>x.captured).length;if(o==='nation_bastille')return quickConnected('nation','bastille');if(o==='republique_nation')return quickConnected('republique','nation');if(o==='republique_opera')return quickConnected('republique','opera');if(o==='barricades_concorde'){const c=p.concorde;if(!c)return false;return [[1,0],[-1,0],[0,1],[0,-1]].every(([dx,dy])=>gameState.tiles[`${c.gx+dx},${c.gy+dy}`]?.content==='barricade');}if(o==='first_etoile')return gameState.capturedHistory[0]==='etoile';if(o==='first_elysee')return gameState.capturedHistory[0]==='elysee';if(o==='org_green')return org('etoile')&&org('elysee')&&org('concorde');if(o==='org_culture')return org('nation')&&org('opera');if(o==='org_law')return org('assemblee')&&org('senat');if(o==='passants40')return (st.passants||0)>=40;if(o==='min3')return gameState.quickMinThreeMaintained;if(o==='crs40')return (st.forcesImmobilisees||0)>=40;if(o==='legendary10')return gameState.quickLegendaryKills>=10;if(o==='super5')return gameState.quickSuperKills>=5;if(o==='places5')return captured>=5;return false;}
+        function quickObjectiveMet(){const o=gameState.quickObjective&&gameState.quickObjective.id,st=gameState.stats||{},p=gameState.places||{},org=id=>p[id]&&p[id].organizationActive,captured=Object.values(p).filter(x=>x.captured).length;if(o==='nation_bastille')return quickConnected('nation','bastille');if(o==='republique_nation')return quickConnected('republique','nation');if(o==='republique_opera')return quickConnected('republique','opera');if(o==='barricades_concorde'){const c=p.concorde;if(!c)return false;return [[0,1],[1,0],[1,1],[-1,1]].every(([dx,dy])=>gameState.tiles[`${c.gx+dx},${c.gy+dy}`]?.content==='barricade');}if(o==='first_etoile')return gameState.capturedHistory[0]==='etoile';if(o==='first_elysee')return gameState.capturedHistory[0]==='elysee';if(o==='org_green')return org('etoile')&&org('elysee')&&org('concorde');if(o==='org_culture')return org('nation')&&org('opera');if(o==='org_law')return org('assemblee')&&org('senat');if(o==='passants40')return (st.passants||0)>=40;if(o==='min3')return gameState.quickMinThreeMaintained;if(o==='crs40')return (st.forcesImmobilisees||0)>=40;if(o==='legendary10')return gameState.quickLegendaryKills>=10;if(o==='super5')return gameState.quickSuperKills>=5;if(o==='places5')return captured>=5;if(o==='manifestants30')return (st.maxManifestants||0)>30;if(o==='manifestants15max')return (st.maxManifestants||0)<=15;if(o==='gav0')return gameState.gavCount===0;if(o==='hospital0')return gameState.hospitalCount===0;if(o==='manifestants15_places0')return gameState.manifestants.length===15&&captured===0;if(o==='super_actif')return gameState.manifestants.some(m=>m.isSuper);if(o==='legendaire_actif')return gameState.manifestants.some(m=>m.isLegendary);if(o==='org_solidarite')return org('invalides')&&org('bastille')&&org('hotel_de_ville');if(o==='places3_tour100')return gameState.quickThreePlacesBy100;if(o==='places4_tour200')return gameState.quickFourPlacesBy200;return false;}
         function getQuickScore(){const st=gameState.stats||{},captured=Object.values(gameState.places||{}).filter(p=>p.captured).length,active=Object.values(gameState.places||{}).filter(p=>p.organizationActive).length;return (st.passants||0)*10+(st.forcesImmobilisees||0)*20+captured*40+active*50-(gameState.quickLostManifs||0)*5-(gameState.quickAbandonedOrgs||0)*200;}
         function updateQuickMode(){if(gameState.gameMode!=='quick'||gameState.quickEnded)return;gameState.quickMinThreeMaintained=gameState.quickMinThreeMaintained&&gameState.manifestants.length>=3;document.getElementById('quick-turns-left').textContent=Math.max(0,500-gameState.totalMoves);document.getElementById('quick-live-score').textContent=getQuickScore();if(gameState.totalMoves>=500)endQuickGame();}
         function quickLevel(score){if(score<500)return ['Niveau 0/5','Raphaël Glucksmann is that you ?'];if(score<1000)return ['Niveau 1/5','CFDT-tier'];if(score<1500)return ['Niveau 2/5','On reste plus proche du ballon CGT que du drapeau révolutionnaire mais c’est déjà ça'];if(score<1800)return ['Niveau 3/5','Gilet jaune'];if(score<2100)return ['Niveau 4/5','Black-bloc'];return ['Niveau 5/5','Communard'];}
@@ -1040,7 +1053,7 @@
             gameState.nasseEpoch = null;
             gameState.nasseWindow = 0;
             gameState.nextNasseTurn = null;
-            gameState.quickObjectiveAchieved=false; gameState.quickMinThreeMaintained=true; gameState.quickLegendaryKills=0; gameState.quickSuperKills=0; gameState.quickLostManifs=0; gameState.quickAbandonedOrgs=0; gameState.quickEnded=false;
+            gameState.quickObjectiveAchieved=false; gameState.quickMinThreeMaintained=true; gameState.quickThreePlacesBy100=false; gameState.quickFourPlacesBy200=false; gameState.quickLegendaryKills=0; gameState.quickSuperKills=0; gameState.quickLostManifs=0; gameState.quickAbandonedOrgs=0; gameState.quickEnded=false;
             gameState.stats = { maxManifestants: 0, forcesImmobilisees: 0, gav: 0, hospital: 0, passants: 0, barricades: 0, supers: 0, superIds: [], legendaries: 0, legendaryBooksRead: 0, nasses: 0, nassesTotal: 0, maxPlaces: 0, organizationsProclaimed: [] };
             Object.values(gameState.places).forEach(p => { p.organizationActive=false; p.organizationDue=null; p.rewardChoice=null; p.occupiedManifs=0; p.captured=false; });
 
@@ -1206,6 +1219,10 @@
         function maintainCRSCount() {
             if (gameState.nasse && gameState.nasse.active) return;
             const capturedCount = Object.values(gameState.places).filter(p => p.captured).length;
+            if(gameState.gameMode==='quick'){
+                if(gameState.totalMoves<=100 && capturedCount>=3) gameState.quickThreePlacesBy100=true;
+                if(gameState.totalMoves<=200 && capturedCount>=4) gameState.quickFourPlacesBy200=true;
+            }
             const targetCount = Math.min(14, 3 + capturedCount);
 
             // Corrige d'éventuels CRS superposés issus d'un déplacement précédent.
