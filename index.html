@@ -266,7 +266,7 @@
         <button type="button" onclick="openDifficultyFromStart()" class="relative z-10 mt-4 shrink-0 bg-red-600 hover:bg-red-500 active:bg-red-700 text-white border-2 border-white/80 font-black px-8 py-3 rounded-2xl uppercase tracking-[0.18em] text-base shadow-2xl transition transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-amber-300 sm:absolute sm:mt-0 sm:bottom-[7%] sm:left-1/2 sm:-translate-x-1/2 sm:px-10 sm:py-4 sm:tracking-[0.22em] sm:text-lg">
             <i class="fa-solid fa-play mr-3"></i>Démarrer
         </button>
-        <div class="absolute bottom-3 left-3 z-10 rounded-md border border-white/15 bg-slate-950/55 px-2 py-1 text-[10px] font-semibold tracking-wider text-slate-300/80 backdrop-blur-sm sm:bottom-4 sm:left-4 sm:text-xs">v2.38</div>
+        <div class="absolute bottom-3 left-3 z-10 rounded-md border border-white/15 bg-slate-950/55 px-2 py-1 text-[10px] font-semibold tracking-wider text-slate-300/80 backdrop-blur-sm sm:bottom-4 sm:left-4 sm:text-xs">v2.39</div>
     </div>
 
     <!-- MODAL DE SÉLECTION DE DIFFICULTÉ (AU DÉMARRAGE) -->
@@ -550,6 +550,32 @@
             </div>
             <h3 class="font-bold text-lg text-slate-100">Menu</h3>
             <p class="text-xs text-slate-400">Le mouvement est mis en pause.</p>
+            <div id="menu-normal-summary" class="hidden space-y-3">
+                <div class="bg-slate-950 border border-amber-500/40 rounded-xl p-3">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-400">SCORE PROVISOIRE</div>
+                    <div id="menu-normal-score" class="text-3xl font-black text-amber-400 mt-1">0</div>
+                </div>
+                <div class="bg-slate-950 border border-slate-700 rounded-xl p-3">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-400">Médailles acquises (voir stats)</div>
+                    <div id="menu-normal-medals" class="flex flex-wrap justify-center gap-2 mt-2"></div>
+                </div>
+            </div>
+            <div id="menu-quick-summary" class="hidden space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-950 border border-amber-500/40 rounded-xl p-3">
+                        <div class="text-[10px] uppercase tracking-wider text-slate-400">SCORE PROVISOIRE</div>
+                        <div id="menu-quick-score" class="text-2xl font-black text-amber-400 mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-950 border border-cyan-500/40 rounded-xl p-3">
+                        <div class="text-[10px] uppercase tracking-wider text-slate-400">Tours restants</div>
+                        <div id="menu-quick-turns" class="text-2xl font-black text-cyan-300 mt-1">500</div>
+                    </div>
+                </div>
+                <div class="bg-slate-950 border border-emerald-500/40 rounded-xl p-3 text-left">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-400">Rappel de l'objectif</div>
+                    <div id="menu-quick-objective" class="text-sm font-bold text-emerald-300 mt-1"></div>
+                </div>
+            </div>
             <button id="music-toggle-button" type="button" onclick="audioManager.toggleBackgroundMusic()" class="w-full bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 border border-emerald-700 font-semibold py-2 rounded-xl text-xs transition"><i class="fa-solid fa-volume-high mr-2"></i>Musique : ON</button>
             <div class="flex space-x-3 pt-2">
                 <button onclick="closeRestartModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2 rounded-xl text-xs transition">
@@ -2745,7 +2771,30 @@ ${legInfo.name}
             modal.scrollTop=0;
         }
 
+        function updatePauseMenuSummary() {
+            const isQuick = gameState.gameMode === 'quick';
+            const normalSummary = document.getElementById('menu-normal-summary');
+            const quickSummary = document.getElementById('menu-quick-summary');
+            normalSummary.classList.toggle('hidden', isQuick);
+            quickSummary.classList.toggle('hidden', !isQuick);
+
+            if (isQuick) {
+                document.getElementById('menu-quick-score').textContent = getQuickScore();
+                document.getElementById('menu-quick-turns').textContent = Math.max(0, 500 - (gameState.totalMoves || 0));
+                document.getElementById('menu-quick-objective').textContent = gameState.quickObjective?.text || 'Aucun objectif bonus sélectionné.';
+                return;
+            }
+
+            const data = getEndGameStatsData();
+            document.getElementById('menu-normal-score').textContent = data.score;
+            const medalsBox = document.getElementById('menu-normal-medals');
+            medalsBox.innerHTML = data.medals.length
+                ? data.medals.map(m => `<span class="w-9 h-9 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center border border-amber-200" title="Médaille acquise"><i class="fa-solid ${m[1]}"></i></span>`).join('')
+                : '<span class="text-xs text-slate-500">Aucune médaille acquise</span>';
+        }
+
         function restartGameConfirm() {
+            updatePauseMenuSummary();
             document.getElementById('modal-restart').classList.remove('hidden'); audioManager.updateMusicButton();
         }
 
